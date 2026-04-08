@@ -16,6 +16,7 @@
         const { useState, useMemo, useEffect } = React;
 
         const INQUIRY_STORAGE_KEY = 'starrich-inquiries-v1';
+        const GOOGLE_SCRIPT_WEB_APP_URL = '';
         const initialInquiryForm = {
           name: '',
           phone: '',
@@ -44,6 +45,7 @@
           const [inquiryForm, setInquiryForm] = useState(initialInquiryForm);
           const [inquiryEntries, setInquiryEntries] = useState([]);
           const [inquiryStatus, setInquiryStatus] = useState({ type: '', message: '' });
+          const [isSubmittingInquiry, setIsSubmittingInquiry] = useState(false);
 
           // 선택한 시작연도를 기준으로 5개 연도 배열 생성 (시작년도부터 +4년까지)
           const yearRange = useMemo(() => {
@@ -783,7 +785,7 @@ const currentRates2025 = useMemo(() => {
             }));
           };
 
-          const handleInquirySubmit = (e) => {
+          const handleInquirySubmit = async (e) => {
             e.preventDefault();
 
             const trimmedForm = {
@@ -810,30 +812,49 @@ const currentRates2025 = useMemo(() => {
               return;
             }
 
-            const nextEntries = [
-              {
-                id: Date.now(),
-                consultant: '양금주 상무',
-                submittedAt: new Date().toISOString(),
-                ...trimmedForm,
-              },
-              ...inquiryEntries,
-            ];
+            const payload = {
+              id: Date.now(),
+              consultant: '양금주 상무',
+              submittedAt: new Date().toISOString(),
+              ...trimmedForm,
+            };
+
+            setIsSubmittingInquiry(true);
 
             try {
+              if (GOOGLE_SCRIPT_WEB_APP_URL) {
+                const response = await fetch(GOOGLE_SCRIPT_WEB_APP_URL, {
+                  method: 'POST',
+                  headers: {
+                    'Content-Type': 'text/plain;charset=utf-8',
+                  },
+                  body: JSON.stringify(payload),
+                });
+
+                const result = await response.json();
+                if (!response.ok || result.result !== 'success') {
+                  throw new Error(result.message || 'Drive CSV 저장 실패');
+                }
+              }
+
+              const nextEntries = [payload, ...inquiryEntries];
               localStorage.setItem(INQUIRY_STORAGE_KEY, JSON.stringify(nextEntries));
               setInquiryEntries(nextEntries);
               setInquiryForm(initialInquiryForm);
               setInquiryStatus({
                 type: 'success',
-                message: '상담신청이 저장되었습니다. 이 브라우저에서 목록과 CSV로 확인할 수 있습니다.',
+                message: GOOGLE_SCRIPT_WEB_APP_URL
+                  ? '상담신청이 저장되었습니다. Drive 폴더의 CSV와 이 브라우저 목록에 반영되었습니다.'
+                  : '상담신청이 저장되었습니다. 현재는 웹앱 URL이 비어 있어 이 브라우저에만 저장되었습니다.',
               });
             } catch (error) {
               console.error('상담신청 데이터 저장 실패', error);
               setInquiryStatus({
                 type: 'error',
-                message: '브라우저 저장소에 데이터를 저장하지 못했습니다. 다른 브라우저나 기기 설정을 확인해 주세요.',
+                message: error.message || '상담신청 저장 중 오류가 발생했습니다.',
               });
+            } finally {
+              setIsSubmittingInquiry(false);
             }
           };
 
@@ -1362,7 +1383,7 @@ const currentRates2025 = useMemo(() => {
                         <div>
                           <p className="text-sm font-semibold tracking-[0.24em] text-slate-400">CONTACT FORM</p>
                           <h3 className="mt-2 text-2xl font-bold text-slate-900">상담신청 접수</h3>
-                          <p className="mt-2 text-sm text-slate-600">양금주 상무 상담 연결을 위한 신청 정보를 아래에서 접수할 수 있습니다.</p>
+                          <p className="mt-2 text-sm text-slate-600">양금주 상무 상담 연결을 위한 신청 정보를 아래에서 접수할 수 있습니다. 웹앱 URL을 연결하면 지정한 Drive 폴더의 CSV에도 함께 저장됩니다.</p>
                         </div>
                         <div className="rounded-2xl bg-slate-100 px-4 py-3 text-right">
                           <p className="text-xs font-semibold text-slate-500">저장된 신청</p>
@@ -1425,7 +1446,7 @@ const currentRates2025 = useMemo(() => {
                             onChange={handleInquiryChange}
                             className="mt-1 h-4 w-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500"
                           />
-                          <span>개인정보 수집 및 이용에 동의합니다. 수집 항목은 성명, 연락처, 이메일, 상담내용이며 상담 응대 목적으로 이 브라우저에 저장됩니다.</span>
+                          <span>개인정보 수집 및 이용에 동의합니다. 수집 항목은 성명, 연락처, 이메일, 상담내용이며 상담 응대 목적으로 Drive 폴더의 CSV와 이 브라우저에 저장될 수 있습니다.</span>
                         </label>
 
                         {inquiryStatus.message && (
@@ -1443,9 +1464,10 @@ const currentRates2025 = useMemo(() => {
                         <div className="flex flex-col gap-3 sm:flex-row">
                           <button
                             type="submit"
-                            className="inline-flex items-center justify-center rounded-xl bg-blue-600 px-5 py-3 text-sm font-semibold text-white transition hover:bg-blue-700"
+                            disabled={isSubmittingInquiry}
+                            className="inline-flex items-center justify-center rounded-xl bg-blue-600 px-5 py-3 text-sm font-semibold text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:bg-blue-300"
                           >
-                            상담신청 저장
+                            {isSubmittingInquiry ? '저장 중...' : '상담신청 저장'}
                           </button>
                           <button
                             type="button"
