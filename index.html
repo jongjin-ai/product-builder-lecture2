@@ -15,6 +15,15 @@
     <script type="text/babel">
         const { useState, useMemo, useEffect } = React;
 
+        const INQUIRY_STORAGE_KEY = 'starrich-inquiries-v1';
+        const initialInquiryForm = {
+          name: '',
+          phone: '',
+          email: '',
+          message: '',
+          consent: false,
+        };
+
         /*
          * 계산기 컴포넌트
          * - 만 15~29세 청년 정규직을 15~34세로 수정합니다.
@@ -32,6 +41,9 @@
           const [endYear, setEndYear] = useState(''); // 데이터 마지막년도(선택)
           const [yearlyData, setYearlyData] = useState({});
           const [results, setResults] = useState(null);
+          const [inquiryForm, setInquiryForm] = useState(initialInquiryForm);
+          const [inquiryEntries, setInquiryEntries] = useState([]);
+          const [inquiryStatus, setInquiryStatus] = useState({ type: '', message: '' });
 
           // 선택한 시작연도를 기준으로 5개 연도 배열 생성 (시작년도부터 +4년까지)
           const yearRange = useMemo(() => {
@@ -65,6 +77,17 @@
             });
             setYearlyData(newData);
           }, [baseYear, endYear]);
+
+          useEffect(() => {
+            try {
+              const savedEntries = JSON.parse(localStorage.getItem(INQUIRY_STORAGE_KEY) || '[]');
+              if (Array.isArray(savedEntries)) {
+                setInquiryEntries(savedEntries);
+              }
+            } catch (error) {
+              console.error('상담신청 데이터 로드 실패', error);
+            }
+          }, []);
 
           // 기준 판단 함수: 연도가 2025년 이하면 '2025' (이전 기준), 그렇지 않으면 '2026' (이후 기준)
           function getBaselineByYear(year) {
@@ -752,6 +775,94 @@ const currentRates2025 = useMemo(() => {
             URL.revokeObjectURL(url);
           };
 
+          const handleInquiryChange = (e) => {
+            const { name, value, type, checked } = e.target;
+            setInquiryForm((prev) => ({
+              ...prev,
+              [name]: type === 'checkbox' ? checked : value,
+            }));
+          };
+
+          const handleInquirySubmit = (e) => {
+            e.preventDefault();
+
+            const trimmedForm = {
+              name: inquiryForm.name.trim(),
+              phone: inquiryForm.phone.trim(),
+              email: inquiryForm.email.trim(),
+              message: inquiryForm.message.trim(),
+              consent: inquiryForm.consent,
+            };
+
+            if (!trimmedForm.name || !trimmedForm.phone || !trimmedForm.email || !trimmedForm.message) {
+              setInquiryStatus({
+                type: 'error',
+                message: '성명, 연락처, 이메일, 상담내용을 모두 입력해 주세요.',
+              });
+              return;
+            }
+
+            if (!trimmedForm.consent) {
+              setInquiryStatus({
+                type: 'error',
+                message: '개인정보 수집 및 이용 동의가 필요합니다.',
+              });
+              return;
+            }
+
+            const nextEntries = [
+              {
+                id: Date.now(),
+                consultant: '양금주 상무',
+                submittedAt: new Date().toISOString(),
+                ...trimmedForm,
+              },
+              ...inquiryEntries,
+            ];
+
+            try {
+              localStorage.setItem(INQUIRY_STORAGE_KEY, JSON.stringify(nextEntries));
+              setInquiryEntries(nextEntries);
+              setInquiryForm(initialInquiryForm);
+              setInquiryStatus({
+                type: 'success',
+                message: '상담신청이 저장되었습니다. 이 브라우저에서 목록과 CSV로 확인할 수 있습니다.',
+              });
+            } catch (error) {
+              console.error('상담신청 데이터 저장 실패', error);
+              setInquiryStatus({
+                type: 'error',
+                message: '브라우저 저장소에 데이터를 저장하지 못했습니다. 다른 브라우저나 기기 설정을 확인해 주세요.',
+              });
+            }
+          };
+
+          const exportInquiryCSV = () => {
+            if (!inquiryEntries.length) {
+              setInquiryStatus({
+                type: 'error',
+                message: '다운로드할 상담신청 데이터가 없습니다.',
+              });
+              return;
+            }
+
+            let csv = '\uFEFF접수일시,담당자,성명,연락처,이메일,상담내용,개인정보동의\n';
+            inquiryEntries.forEach((entry) => {
+              const safeMessage = entry.message.replace(/\n/g, ' ').replace(/"/g, '""');
+              csv += `${entry.submittedAt},${entry.consultant},${entry.name},${entry.phone},${entry.email},"${safeMessage}",${entry.consent ? '동의' : '미동의'}\n`;
+            });
+
+            const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `상담신청_${new Date().toISOString().split('T')[0]}.csv`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+          };
+
           return (
             <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-50 p-4">
               <div className="max-w-7xl mx-auto">
@@ -1245,15 +1356,150 @@ const currentRates2025 = useMemo(() => {
                         </li>
                       </ul>
                     </div>
+
+                    <div className="mt-8 rounded-3xl border border-slate-200 bg-white p-6 shadow-lg">
+                      <div className="flex items-start justify-between gap-4">
+                        <div>
+                          <p className="text-sm font-semibold tracking-[0.24em] text-slate-400">CONTACT FORM</p>
+                          <h3 className="mt-2 text-2xl font-bold text-slate-900">상담신청 접수</h3>
+                          <p className="mt-2 text-sm text-slate-600">양금주 상무 상담 연결을 위한 신청 정보를 아래에서 접수할 수 있습니다.</p>
+                        </div>
+                        <div className="rounded-2xl bg-slate-100 px-4 py-3 text-right">
+                          <p className="text-xs font-semibold text-slate-500">저장된 신청</p>
+                          <p className="text-2xl font-bold text-slate-900">{inquiryEntries.length}</p>
+                        </div>
+                      </div>
+
+                      <form className="mt-6 space-y-4" onSubmit={handleInquirySubmit}>
+                        <div>
+                          <label className="mb-2 block text-sm font-semibold text-slate-700">성명</label>
+                          <input
+                            type="text"
+                            name="name"
+                            value={inquiryForm.name}
+                            onChange={handleInquiryChange}
+                            className="w-full rounded-xl border border-slate-300 px-4 py-3 text-slate-900 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
+                            placeholder="성명을 입력해 주세요"
+                          />
+                        </div>
+                        <div className="grid gap-4 md:grid-cols-2">
+                          <div>
+                            <label className="mb-2 block text-sm font-semibold text-slate-700">연락처</label>
+                            <input
+                              type="tel"
+                              name="phone"
+                              value={inquiryForm.phone}
+                              onChange={handleInquiryChange}
+                              className="w-full rounded-xl border border-slate-300 px-4 py-3 text-slate-900 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
+                              placeholder="010-0000-0000"
+                            />
+                          </div>
+                          <div>
+                            <label className="mb-2 block text-sm font-semibold text-slate-700">이메일</label>
+                            <input
+                              type="email"
+                              name="email"
+                              value={inquiryForm.email}
+                              onChange={handleInquiryChange}
+                              className="w-full rounded-xl border border-slate-300 px-4 py-3 text-slate-900 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
+                              placeholder="name@example.com"
+                            />
+                          </div>
+                        </div>
+                        <div>
+                          <label className="mb-2 block text-sm font-semibold text-slate-700">상담내용</label>
+                          <textarea
+                            name="message"
+                            value={inquiryForm.message}
+                            onChange={handleInquiryChange}
+                            rows="6"
+                            className="w-full rounded-xl border border-slate-300 px-4 py-3 text-slate-900 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
+                            placeholder="필요한 상담 내용을 자세히 남겨 주세요"
+                          />
+                        </div>
+                        <label className="flex items-start gap-3 rounded-2xl bg-slate-50 px-4 py-4 text-sm text-slate-700">
+                          <input
+                            type="checkbox"
+                            name="consent"
+                            checked={inquiryForm.consent}
+                            onChange={handleInquiryChange}
+                            className="mt-1 h-4 w-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500"
+                          />
+                          <span>개인정보 수집 및 이용에 동의합니다. 수집 항목은 성명, 연락처, 이메일, 상담내용이며 상담 응대 목적으로 이 브라우저에 저장됩니다.</span>
+                        </label>
+
+                        {inquiryStatus.message && (
+                          <div
+                            className={
+                              inquiryStatus.type === 'success'
+                                ? 'rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700'
+                                : 'rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700'
+                            }
+                          >
+                            {inquiryStatus.message}
+                          </div>
+                        )}
+
+                        <div className="flex flex-col gap-3 sm:flex-row">
+                          <button
+                            type="submit"
+                            className="inline-flex items-center justify-center rounded-xl bg-blue-600 px-5 py-3 text-sm font-semibold text-white transition hover:bg-blue-700"
+                          >
+                            상담신청 저장
+                          </button>
+                          <button
+                            type="button"
+                            onClick={exportInquiryCSV}
+                            className="inline-flex items-center justify-center rounded-xl border border-slate-300 px-5 py-3 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
+                          >
+                            신청데이터 CSV 다운로드
+                          </button>
+                        </div>
+                      </form>
+
+                      {inquiryEntries.length > 0 && (
+                        <div className="mt-6 rounded-2xl border border-slate-200">
+                          <div className="flex items-center justify-between border-b border-slate-200 px-4 py-3">
+                            <p className="text-sm font-semibold text-slate-800">최근 접수 내역</p>
+                            <p className="text-xs text-slate-500">같은 브라우저 기준</p>
+                          </div>
+                          <div className="max-h-72 overflow-auto">
+                            <table className="w-full min-w-[640px] text-left text-sm">
+                              <thead className="bg-slate-50 text-slate-600">
+                                <tr>
+                                  <th className="px-4 py-3 font-semibold">접수일시</th>
+                                  <th className="px-4 py-3 font-semibold">성명</th>
+                                  <th className="px-4 py-3 font-semibold">연락처</th>
+                                  <th className="px-4 py-3 font-semibold">이메일</th>
+                                  <th className="px-4 py-3 font-semibold">상담내용</th>
+                                </tr>
+                              </thead>
+                              <tbody>
+                                {inquiryEntries.map((entry) => (
+                                  <tr key={entry.id} className="border-t border-slate-100 align-top text-slate-700">
+                                    <td className="px-4 py-3 whitespace-nowrap">{new Date(entry.submittedAt).toLocaleString('ko-KR')}</td>
+                                    <td className="px-4 py-3 font-medium">{entry.name}</td>
+                                    <td className="px-4 py-3">{entry.phone}</td>
+                                    <td className="px-4 py-3">{entry.email}</td>
+                                    <td className="px-4 py-3 whitespace-pre-line">{entry.message}</td>
+                                  </tr>
+                                ))}
+                              </tbody>
+                            </table>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+
                     <div className="mt-8 rounded-2xl border border-slate-200 bg-white px-6 py-5 shadow-sm">
                       <div className="flex flex-col items-center justify-between gap-4 text-center md:flex-row md:text-left">
                         <div>
                           <p className="text-sm font-semibold tracking-[0.2em] text-slate-500">PARTNER</p>
                           <p className="mt-2 text-lg font-bold text-slate-900">스타리치어드바이져</p>
-                          <p className="mt-1 text-sm text-slate-600">공식 사이트를 참고해 추가 정보와 기업 컨설팅 서비스를 확인할 수 있습니다.</p>
+                          <p className="mt-1 text-sm text-slate-600">스타리치어드바이져 공식 사이트와 양금주 상무 상담신청 페이지를 함께 참고할 수 있습니다.</p>
                         </div>
                         <a
-                          href="https://www.starrich.co.kr/"
+                          href="https://www.starrich.co.kr/community/inquiry?ceg_id=250306C000001&cnstnt_nm=%EC%96%91%EA%B8%88%EC%A3%BC&cnstnt_ofc=%EC%83%81%EB%AC%B4"
                           target="_blank"
                           rel="noopener noreferrer"
                           className="flex items-center justify-center rounded-xl border border-slate-200 bg-slate-50 px-5 py-4 transition hover:border-slate-300 hover:bg-slate-100"
