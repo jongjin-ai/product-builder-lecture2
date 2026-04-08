@@ -23,10 +23,6 @@
          * - 연도별 세액공제 계산 시 1차년도는 해당 연도의 기준을 적용하고, 2차/3차년도 추가공제는 최초 공제연도의 기준을 그대로 사용합니다.
          */
 
-        // 로그인 처리를 포함하는 래퍼 컴포넌트.
-        // 로그인 성공 시 기존 Calculator UI를 보여줍니다.
-        const LOGIN_ID = 'starrich';
-        const LOGIN_PW = 'star1004';
 
         const Calculator = () => {
           // 상태 변수 정의
@@ -1256,73 +1252,7 @@ const currentRates2025 = useMemo(() => {
           );
         };
 
-        // 로그인 화면을 거쳐 Calculator를 렌더링하는 App 컴포넌트를 정의합니다.
-        const App = () => {
-          const [isAuthenticated, setIsAuthenticated] = useState(false);
-          const [username, setUsername] = useState('');
-          const [password, setPassword] = useState('');
-          const [loginError, setLoginError] = useState('');
-
-          const handleLogin = (e) => {
-            e.preventDefault();
-            // 입력값과 사전에 정의된 로그인 정보 비교
-            if (username === LOGIN_ID && password === LOGIN_PW) {
-              setIsAuthenticated(true);
-              setLoginError('');
-            } else {
-              setLoginError('아이디나 비밀번호가 올바르지 않습니다.');
-            }
-          };
-
-          if (!isAuthenticated) {
-            return (
-              <div className="min-h-screen flex items-center justify-center bg-gray-50">
-                <form
-                  onSubmit={handleLogin}
-                  className="bg-white p-8 rounded shadow-md w-80"
-                >
-                  <h2 className="text-2xl font-bold mb-6 text-center">로그인</h2>
-                  <div className="mb-4">
-                    <label className="block mb-1 text-sm font-medium">아이디</label>
-                    <input
-                      type="text"
-                      value={username}
-                      onChange={(e) => setUsername(e.target.value)}
-                      className="w-full p-2 border rounded focus:ring-2 focus:ring-blue-500"
-                      placeholder="아이디를 입력하세요"
-                    />
-                  </div>
-                  <div className="mb-4">
-                    <label className="block mb-1 text-sm font-medium">비밀번호</label>
-                    <input
-                      type="password"
-                      value={password}
-                      onChange={(e) => setPassword(e.target.value)}
-                      className="w-full p-2 border rounded focus:ring-2 focus:ring-blue-500"
-                      placeholder="비밀번호를 입력하세요"
-                    />
-                  </div>
-                  {loginError && (
-                    <div className="mb-4 text-red-600 text-sm text-center">
-                      {loginError}
-                    </div>
-                  )}
-                  <button
-                    type="submit"
-                    className="w-full bg-blue-500 text-white py-2 rounded hover:bg-blue-600"
-                  >
-                    로그인
-                  </button>
-                </form>
-              </div>
-            );
-          }
-
-          // 로그인 성공 시 기존 Calculator 컴포넌트 렌더링
-          return <Calculator />;
-        };
-
-        ReactDOM.render(<App />, document.getElementById('root'));
+        ReactDOM.render(<Calculator />, document.getElementById('root'));
     </script>
 </body>
 </html>
