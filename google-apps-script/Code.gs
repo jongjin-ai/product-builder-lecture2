@@ -4,6 +4,8 @@ const CSV_HEADERS = [
   '접수일시',
   '담당자',
   '성명',
+  '회사명',
+  '직함',
   '연락처',
   '이메일',
   '상담내용',
@@ -15,7 +17,7 @@ function doPost(e) {
   try {
     const data = JSON.parse(e.postData.contents || '{}');
 
-    if (!data.name || !data.phone || !data.email || !data.message || !data.consent) {
+    if (!data.name || !data.phone || !data.email || !data.company || !data.position || !data.message || !data.consent) {
       return jsonOutput_({
         result: 'error',
         message: '필수 항목이 누락되었습니다.',
@@ -28,6 +30,8 @@ function doPost(e) {
       data.submittedAt || new Date().toISOString(),
       data.consultant || '',
       data.name || '',
+      data.company || '',
+      data.position || '',
       data.phone || '',
       data.email || '',
       data.message || '',

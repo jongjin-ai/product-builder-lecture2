@@ -21,6 +21,8 @@
           name: '',
           phone: '',
           email: '',
+1          company: '',
+          position: '',
           message: '',
           consent: false,
         };
@@ -792,14 +794,16 @@ const currentRates2025 = useMemo(() => {
               name: inquiryForm.name.trim(),
               phone: inquiryForm.phone.trim(),
               email: inquiryForm.email.trim(),
+              company: inquiryForm.company.trim(),
+              position: inquiryForm.position.trim(),
               message: inquiryForm.message.trim(),
               consent: inquiryForm.consent,
             };
 
-            if (!trimmedForm.name || !trimmedForm.phone || !trimmedForm.email || !trimmedForm.message) {
+            if (!trimmedForm.name || !trimmedForm.phone || !trimmedForm.email || !trimmedForm.company || !trimmedForm.position || !trimmedForm.message) {
               setInquiryStatus({
                 type: 'error',
-                message: '성명, 연락처, 이메일, 상담내용을 모두 입력해 주세요.',
+                message: '성명, 회사명, 직함, 연락처, 이메일, 상담내용을 모두 입력해 주세요.',
               });
               return;
             }
@@ -863,10 +867,10 @@ const currentRates2025 = useMemo(() => {
               return;
             }
 
-            let csv = '\uFEFF접수일시,담당자,성명,연락처,이메일,상담내용,개인정보동의\n';
+            let csv = '\uFEFF접수일시,담당자,성명,회사명,직함,연락처,이메일,상담내용,개인정보동의\n';
             inquiryEntries.forEach((entry) => {
               const safeMessage = entry.message.replace(/\n/g, ' ').replace(/"/g, '""');
-              csv += `${entry.submittedAt},${entry.consultant},${entry.name},${entry.phone},${entry.email},"${safeMessage}",${entry.consent ? '동의' : '미동의'}\n`;
+              csv += `${entry.submittedAt},${entry.consultant},${entry.name},${entry.company},${entry.position},${entry.phone},${entry.email},"${safeMessage}",${entry.consent ? '동의' : '미동의'}\n`;
             });
 
             const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
@@ -1388,16 +1392,40 @@ const currentRates2025 = useMemo(() => {
                       </div>
 
                       <form className="mt-6 space-y-4" onSubmit={handleInquirySubmit}>
-                        <div>
-                          <label className="mb-2 block text-sm font-semibold text-slate-700">성명</label>
-                          <input
-                            type="text"
-                            name="name"
-                            value={inquiryForm.name}
-                            onChange={handleInquiryChange}
-                            className="w-full rounded-xl border border-slate-300 px-4 py-3 text-slate-900 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
-                            placeholder="성명을 입력해 주세요"
-                          />
+                        <div className="grid gap-4 md:grid-cols-3">
+                          <div>
+                            <label className="mb-2 block text-sm font-semibold text-slate-700">성명</label>
+                            <input
+                              type="text"
+                              name="name"
+                              value={inquiryForm.name}
+                              onChange={handleInquiryChange}
+                              className="w-full rounded-xl border border-slate-300 px-4 py-3 text-slate-900 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
+                              placeholder="성명을 입력해 주세요"
+                            />
+                          </div>
+                          <div>
+                            <label className="mb-2 block text-sm font-semibold text-slate-700">회사명</label>
+                            <input
+                              type="text"
+                              name="company"
+                              value={inquiryForm.company}
+                              onChange={handleInquiryChange}
+                              className="w-full rounded-xl border border-slate-300 px-4 py-3 text-slate-900 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
+                              placeholder="회사명을 입력해 주세요"
+                            />
+                          </div>
+                          <div>
+                            <label className="mb-2 block text-sm font-semibold text-slate-700">직함</label>
+                            <input
+                              type="text"
+                              name="position"
+                              value={inquiryForm.position}
+                              onChange={handleInquiryChange}
+                              className="w-full rounded-xl border border-slate-300 px-4 py-3 text-slate-900 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
+                              placeholder="예: 대표, 본부장, 부장 등"
+                            />
+                          </div>
                         </div>
                         <div className="grid gap-4 md:grid-cols-2">
                           <div>
