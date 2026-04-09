@@ -803,7 +803,7 @@ const currentRates2025 = useMemo(() => {
             if (!trimmedForm.name || !trimmedForm.phone || !trimmedForm.email || !trimmedForm.company || !trimmedForm.position || !trimmedForm.message) {
               setInquiryStatus({
                 type: 'error',
-                message: '성명, 회사명, 직함, 연락처, 이메일, 상담내용을 모두 입력해 주세요.',
+                message: '성명, 회사명, 대표자, 연락처, 이메일, 상담내용을 모두 입력해 주세요.',
               });
               return;
             }
@@ -867,10 +867,10 @@ const currentRates2025 = useMemo(() => {
               return;
             }
 
-            let csv = '\uFEFF접수일시,담당자,성명,회사명,직함,연락처,이메일,상담내용,개인정보동의\n';
+            let csv = '\uFEFF접수일시,성명,회사명,대표자,연락처,이메일,상담내용,개인정보동의\n';
             inquiryEntries.forEach((entry) => {
               const safeMessage = entry.message.replace(/\n/g, ' ').replace(/"/g, '""');
-              csv += `${entry.submittedAt},${entry.consultant},${entry.name},${entry.company},${entry.position},${entry.phone},${entry.email},"${safeMessage}",${entry.consent ? '동의' : '미동의'}\n`;
+              csv += `${entry.submittedAt},${entry.name},${entry.company},${entry.position},${entry.phone},${entry.email},"${safeMessage}",${entry.consent ? '동의' : '미동의'}\n`;
             });
 
             const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
@@ -1416,14 +1416,14 @@ const currentRates2025 = useMemo(() => {
                             />
                           </div>
                           <div>
-                            <label className="mb-2 block text-sm font-semibold text-slate-700">직함</label>
+                            <label className="mb-2 block text-sm font-semibold text-slate-700">대표자</label>
                             <input
                               type="text"
                               name="position"
                               value={inquiryForm.position}
                               onChange={handleInquiryChange}
                               className="w-full rounded-xl border border-slate-300 px-4 py-3 text-slate-900 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
-                              placeholder="예: 대표, 본부장, 부장 등"
+                              placeholder="대표자 성함을 입력해 주세요"
                             />
                           </div>
                         </div>

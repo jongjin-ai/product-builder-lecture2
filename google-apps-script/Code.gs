@@ -2,10 +2,9 @@ const DRIVE_FOLDER_ID = '1hjF47sZEnHsFyv47lth_bXwIlmMVAobe';
 const CSV_FILE_NAME = '상담신청데이터.csv';
 const CSV_HEADERS = [
   '접수일시',
-  '담당자',
   '성명',
   '회사명',
-  '직함',
+  '대표자',
   '연락처',
   '이메일',
   '상담내용',
@@ -28,7 +27,6 @@ function doPost(e) {
     const file = getOrCreateCsvFile_(folder);
     const row = [
       data.submittedAt || new Date().toISOString(),
-      data.consultant || '',
       data.name || '',
       data.company || '',
       data.position || '',
