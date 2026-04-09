@@ -803,7 +803,7 @@ const currentRates2025 = useMemo(() => {
             if (!trimmedForm.name || !trimmedForm.phone || !trimmedForm.email || !trimmedForm.company || !trimmedForm.position || !trimmedForm.message) {
               setInquiryStatus({
                 type: 'error',
-                message: '성명, 회사명, 대표자, 연락처, 이메일, 상담내용을 모두 입력해 주세요.',
+                message: '성명, 회사명, 직함, 연락처, 이메일, 상담내용을 모두 입력해 주세요.',
               });
               return;
             }
@@ -867,7 +867,7 @@ const currentRates2025 = useMemo(() => {
               return;
             }
 
-            let csv = '\uFEFF접수일시,성명,회사명,대표자,연락처,이메일,상담내용,개인정보동의\n';
+            let csv = '\uFEFF접수일시,성명,회사명,직함,연락처,이메일,상담내용,개인정보동의\n';
             inquiryEntries.forEach((entry) => {
               const safeMessage = entry.message.replace(/\n/g, ' ').replace(/"/g, '""');
               csv += `${entry.submittedAt},${entry.name},${entry.company},${entry.position},${entry.phone},${entry.email},"${safeMessage}",${entry.consent ? '동의' : '미동의'}\n`;
@@ -1416,14 +1416,14 @@ const currentRates2025 = useMemo(() => {
                             />
                           </div>
                           <div>
-                            <label className="mb-2 block text-sm font-semibold text-slate-700">대표자</label>
+                            <label className="mb-2 block text-sm font-semibold text-slate-700">직함</label>
                             <input
                               type="text"
                               name="position"
                               value={inquiryForm.position}
                               onChange={handleInquiryChange}
                               className="w-full rounded-xl border border-slate-300 px-4 py-3 text-slate-900 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
-                              placeholder="대표자 성함을 입력해 주세요"
+                              placeholder="예: 대표, 본부장, 부장 등"
                             />
                           </div>
                         </div>
@@ -1505,7 +1505,7 @@ const currentRates2025 = useMemo(() => {
                           <p className="mt-1 text-sm text-slate-600">스타리치어드바이져 공식 사이트와 상담 안내 페이지를 함께 참고할 수 있습니다.</p>
                         </div>
                         <a
-                          href="https://www.starrich.co.kr/community/inquiry?ceg_id=250306C000001&cnstnt_nm=%EC%96%91%EA%B8%88%EC%A3%BC&cnstnt_ofc=%EC%83%81%EB%AC%B4"
+                          href="https://www.starrich.co.kr/"
                           target="_blank"
                           rel="noopener noreferrer"
                           className="flex items-center justify-center rounded-xl border border-slate-200 bg-slate-50 px-5 py-4 transition hover:border-slate-300 hover:bg-slate-100"
